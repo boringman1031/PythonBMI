@@ -1,4 +1,5 @@
 import math
+from datetime import date
 
 from flask import Flask, render_template, request
 
@@ -29,6 +30,29 @@ def bmi_guidance(bmi):
         "tone": "high",
         "advice": "建議與醫師或營養師討論適合自己的飲食及運動計畫，並留意血壓、血糖等健康指標。",
     }
+
+
+# 《體位區分標準》中與 BMI、身高相關的免役條件，依施行日期由新到舊排列。
+MILITARY_EXEMPTION_STANDARDS = [
+    {
+        "effective": date(2026, 10, 31),
+        "is_exempt": lambda bmi, height: bmi > 45 or height <= 144,
+        "criteria": "BMI 大於 45，或身高 144 公分以下",
+    },
+    {
+        "effective": date.min,
+        "is_exempt": lambda bmi, height: bmi < 15 or bmi > 35 or height <= 154 or height >= 196,
+        "criteria": "BMI 小於 15 或大於 35，或身高 154 公分以下、196 公分以上",
+    },
+]
+
+
+def military_exemption(bmi, height, today=None):
+    today = today or date.today()
+    standard = next(s for s in MILITARY_EXEMPTION_STANDARDS if today >= s["effective"])
+    if not standard["is_exempt"](bmi, height):
+        return None
+    return {"criteria": standard["criteria"]}
 
 
 def parse_positive_number(value):
@@ -68,7 +92,11 @@ def index():
                     errors["weight"] = "無法使用這組數值計算 BMI，請檢查身高與體重。"
                 else:
                     displayed_bmi = round(bmi, 1)
-                    result = {"bmi": f"{displayed_bmi:.1f}", **bmi_guidance(displayed_bmi)}
+                    result = {
+                        "bmi": f"{displayed_bmi:.1f}",
+                        **bmi_guidance(displayed_bmi),
+                        "exemption": military_exemption(displayed_bmi, height),
+                    }
 
     return render_template(
         "index.html",

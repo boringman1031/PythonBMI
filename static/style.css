@@ -80,6 +80,9 @@ button span { font-size: 20px; font-weight: 400; }
 .range-row strong { color: #405247; font-weight: 600; white-space: nowrap; }
 .range-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 .low-dot { background: #a2b8ca; }.healthy-dot { background: #85b487; }.high-dot { background: #e1c37d; }.obese-dot { background: #ca977d; }
+.exemption-notice { position: relative; z-index: 1; max-width: 340px; margin-top: 22px; padding: 14px 16px; border-left: 3px solid #c62828; border-radius: 8px; background: rgba(255, 255, 255, .6); }
+.exemption-notice strong { color: #c62828; font-size: 15px; }
+.exemption-notice p { margin-top: 4px; font-size: 13px; line-height: 1.7; }
 .disclaimer { margin: 0 0 50px; color: #839389; font-size: 12px; line-height: 1.8; }
 footer { display: flex; justify-content: space-between; padding: 22px 0 30px; border-top: 1px solid #e1e5dc; color: #94a49a; font-size: 11px; }
 footer span { letter-spacing: .14em; }
