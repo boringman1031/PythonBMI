@@ -1,6 +1,7 @@
 import unittest
+from datetime import date
 
-from app import app, bmi_guidance
+from app import app, bmi_guidance, military_exemption
 
 
 class BmiAppTests(unittest.TestCase):
@@ -32,6 +33,40 @@ class BmiAppTests(unittest.TestCase):
         ]:
             with self.subTest(bmi=bmi):
                 self.assertEqual(bmi_guidance(bmi)["label"], category)
+
+    def test_military_exemption_before_2026_revision(self):
+        today = date(2026, 10, 30)
+        for bmi, height, exempt in [
+            (14.9, 170, True),
+            (15.0, 170, False),
+            (35.0, 170, False),
+            (35.1, 170, True),
+            (22.0, 154, True),
+            (22.0, 155, False),
+            (22.0, 195, False),
+            (22.0, 196, True),
+        ]:
+            with self.subTest(bmi=bmi, height=height):
+                self.assertEqual(military_exemption(bmi, height, today) is not None, exempt)
+
+    def test_military_exemption_after_2026_revision(self):
+        today = date(2026, 10, 31)
+        for bmi, height, exempt in [
+            (14.9, 170, False),
+            (45.0, 170, False),
+            (45.1, 170, True),
+            (22.0, 144, True),
+            (22.0, 145, False),
+            (22.0, 200, False),
+        ]:
+            with self.subTest(bmi=bmi, height=height):
+                self.assertEqual(military_exemption(bmi, height, today) is not None, exempt)
+
+    def test_exemption_notice_shown_only_when_exempt(self):
+        response = self.client.post("/", data={"height": "140", "weight": "40"})
+        self.assertIn("符合免役體位", response.get_data(as_text=True))
+        response = self.client.post("/", data={"height": "170", "weight": "65"})
+        self.assertNotIn("符合免役體位", response.get_data(as_text=True))
 
     def test_invalid_fields_do_not_produce_result(self):
         for height, weight in [("", "65"), ("0", "65"), ("abc", "65"), ("170", "-2"), ("inf", "65"), ("170", "nan"), ("1e-300", "65"), ("1e308", "65"), ("1", "1e308")]:
