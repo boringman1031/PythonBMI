@@ -69,10 +69,10 @@
                 <span class="result-label">你的體位屬於 <strong>{{ result.label }}</strong></span>
                 <h2 id="result-title">給你的健康建議</h2>
                 <p>{{ result.advice }}</p>
-                {% if result.exemption %}
-                  <div class="exemption-notice">
-                    <strong>符合免役體位</strong>
-                    <p>依現行《體位區分標準》，{{ result.exemption.criteria }}者屬免役體位。實際判定以徵兵檢查結果為準。</p>
+                {% if result.military %}
+                  <div class="military-notice {{ result.military.kind }}">
+                    <strong>符合{{ result.military.label }}</strong>
+                    <p>依現行《體位區分標準》，{{ result.military.criteria }}者屬{{ result.military.label }}。實際判定以徵兵檢查結果為準。</p>
                   </div>
                 {% endif %}
                 <span class="result-decoration" aria-hidden="true">✳</span>
