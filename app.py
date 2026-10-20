@@ -105,7 +105,7 @@ def index():
                     result = {
                         "bmi": f"{displayed_bmi:.1f}",
                         **bmi_guidance(displayed_bmi),
-                        "military": military_status(displayed_bmi, height),
+                        "military": military_status(bmi, height),
                     }
 
     return render_template(
