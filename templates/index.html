@@ -73,6 +73,19 @@
                   <span class="result-number">{{ result.bmi }}</span>
                   <span class="result-unit">BMI</span>
                 </div>
+                {% set gauge = result.gauge %}
+                <svg class="bmi-gauge" viewBox="-8 -4 216 116" role="img" aria-label="BMI {{ result.bmi }}，{{ result.label }}">
+                  {% for segment in gauge.segments %}
+                    <path class="gauge-segment {{ segment.tone }}" d="M 20 100 A 80 80 0 0 1 180 100" pathLength="{{ gauge.span }}" stroke-dasharray="{{ segment.length }} {{ gauge.span }}" stroke-dashoffset="-{{ segment.start }}"></path>
+                  {% endfor %}
+                  {% for tick in gauge.ticks %}
+                    <text class="gauge-tick" x="{{ tick.x }}" y="{{ tick.y }}">{{ tick.label }}</text>
+                  {% endfor %}
+                  <g class="gauge-needle" transform="rotate({{ gauge.angle }} 100 100)">
+                    <line x1="100" y1="100" x2="100" y2="34"></line>
+                  </g>
+                  <circle class="gauge-hub" cx="100" cy="100" r="6"></circle>
+                </svg>
                 <div class="result-divider"></div>
                 <span class="result-label">你的體位屬於 <strong>{{ result.label }}</strong></span>
                 <h2 id="result-title">給你的健康建議</h2>

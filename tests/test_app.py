@@ -1,7 +1,7 @@
 import unittest
 from datetime import date
 
-from app import app, bmi_guidance, goal_progress, military_status
+from app import app, bmi_gauge, bmi_guidance, goal_progress, military_status
 
 
 class BmiAppTests(unittest.TestCase):
@@ -127,6 +127,34 @@ class BmiAppTests(unittest.TestCase):
                 self.assertIn('value="65"', page)
                 self.assertIn(f'value="{target}"', page)
                 self.assertNotIn("YOUR RESULT", page)
+
+    def test_gauge_angle(self):
+        for bmi, angle in [(10, -90), (25, 0), (40, 90), (5, -90), (60, 90)]:
+            with self.subTest(bmi=bmi):
+                self.assertEqual(bmi_gauge(bmi)["angle"], angle)
+        # 22.0 落在健康體位色段（18.5 – 24）對應的角度之間
+        healthy = bmi_gauge(22)["angle"]
+        self.assertTrue(bmi_gauge(18.5)["angle"] < healthy < bmi_gauge(24)["angle"])
+
+    def test_gauge_segments_cover_scale(self):
+        gauge = bmi_gauge(22)
+        self.assertEqual([s["tone"] for s in gauge["segments"]], ["low", "healthy", "high", "obese"])
+        self.assertEqual(sum(s["length"] for s in gauge["segments"]), gauge["span"])
+        self.assertEqual([t["label"] for t in gauge["ticks"]], ["10", "18.5", "24", "27", "40"])
+
+    def test_gauge_rendered_with_result(self):
+        page = self.client.post("/", data={"height": "170", "weight": "63.6"}).get_data(as_text=True)
+        self.assertIn('class="bmi-gauge"', page)
+        self.assertIn('aria-label="BMI 22.0，健康體位"', page)
+
+        page = self.client.post("/", data={"height": "150", "weight": "120"}).get_data(as_text=True)
+        self.assertIn("53.3", page)
+        self.assertIn('rotate(90.0 100 100)', page)
+
+    def test_gauge_hidden_without_result(self):
+        self.assertNotIn("bmi-gauge", self.client.get("/").get_data(as_text=True))
+        page = self.client.post("/", data={"height": "abc", "weight": "65"}).get_data(as_text=True)
+        self.assertNotIn('class="bmi-gauge"', page)
 
     def test_input_is_escaped(self):
         response = self.client.post("/", data={"height": '<script>alert(1)</script>', "weight": "65"})

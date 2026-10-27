@@ -65,6 +65,37 @@ def military_status(bmi, height, today=None):
     return None
 
 
+# 油表式儀表的刻度範圍與色段，超出範圍時指針停在端點。
+GAUGE_MIN, GAUGE_MAX = 10, 40
+GAUGE_SEGMENTS = [
+    ("low", GAUGE_MIN, 18.5),
+    ("healthy", 18.5, 24),
+    ("high", 24, 27),
+    ("obese", 27, GAUGE_MAX),
+]
+
+
+def bmi_gauge(bmi):
+    clamped = min(max(bmi, GAUGE_MIN), GAUGE_MAX)
+    span = GAUGE_MAX - GAUGE_MIN
+    return {
+        "span": span,
+        "angle": round((clamped - GAUGE_MIN) / span * 180 - 90, 2),
+        "segments": [
+            {"tone": tone, "start": start - GAUGE_MIN, "length": end - start}
+            for tone, start, end in GAUGE_SEGMENTS
+        ],
+        "ticks": [
+            {
+                "label": f"{value:g}",
+                "x": round(100 - 98 * math.cos(math.pi * (value - GAUGE_MIN) / span), 1),
+                "y": round(103 - 98 * math.sin(math.pi * (value - GAUGE_MIN) / span), 1),
+            }
+            for value in (GAUGE_MIN, 18.5, 24, 27, GAUGE_MAX)
+        ],
+    }
+
+
 def goal_progress(bmi, height_meters, weight, target):
     target_weight = target * height_meters * height_meters
     change = round(target_weight - weight, 1)
@@ -130,6 +161,7 @@ def index():
                     result = {
                         "bmi": f"{displayed_bmi:.1f}",
                         **bmi_guidance(displayed_bmi),
+                        "gauge": bmi_gauge(displayed_bmi),
                         "military": military_status(bmi, height),
                         "goal": goal_progress(bmi, height_meters, weight, target) if target else None,
                     }
