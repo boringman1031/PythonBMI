@@ -51,6 +51,14 @@
                     </div>
                     {% if errors.weight %}<p class="field-error" id="weight-error">{{ errors.weight }}</p>{% endif %}
                   </div>
+                  <div class="field field-wide">
+                    <label for="target">目標 BMI <span>TARGET · 選填</span></label>
+                    <div class="input-wrap">
+                      <input id="target" name="target" type="number" inputmode="decimal" min="0.01" step="any" placeholder="例如 22" value="{{ target_input }}" {% if errors.target %}aria-invalid="true" aria-describedby="target-error"{% endif %}>
+                      <span class="unit">BMI</span>
+                    </div>
+                    {% if errors.target %}<p class="field-error" id="target-error">{{ errors.target }}</p>{% endif %}
+                  </div>
                 </div>
                 <button type="submit">計算 BMI <span aria-hidden="true">↗</span></button>
               </form>
@@ -65,10 +73,30 @@
                   <span class="result-number">{{ result.bmi }}</span>
                   <span class="result-unit">BMI</span>
                 </div>
+                {% set gauge = result.gauge %}
+                <svg class="bmi-gauge" viewBox="-8 -4 216 116" role="img" aria-label="BMI {{ result.bmi }}，{{ result.label }}">
+                  {% for segment in gauge.segments %}
+                    <path class="gauge-segment {{ segment.tone }}" d="M 20 100 A 80 80 0 0 1 180 100" pathLength="{{ gauge.span }}" stroke-dasharray="{{ segment.length }} {{ gauge.span }}" stroke-dashoffset="-{{ segment.start }}"></path>
+                  {% endfor %}
+                  {% for tick in gauge.ticks %}
+                    <text class="gauge-tick" x="{{ tick.x }}" y="{{ tick.y }}">{{ tick.label }}</text>
+                  {% endfor %}
+                  <g class="gauge-needle" transform="rotate({{ gauge.angle }} 100 100)">
+                    <line x1="100" y1="100" x2="100" y2="34"></line>
+                  </g>
+                  <circle class="gauge-hub" cx="100" cy="100" r="6"></circle>
+                </svg>
                 <div class="result-divider"></div>
                 <span class="result-label">你的體位屬於 <strong>{{ result.label }}</strong></span>
                 <h2 id="result-title">給你的健康建議</h2>
                 <p>{{ result.advice }}</p>
+                {% if result.goal %}
+                  <div class="goal-notice {{ result.goal.direction }}">
+                    <strong>目標 BMI {{ result.goal.target }}{% if result.goal.direction != "achieved" %}，相差 {{ result.goal.gap }}{% endif %}</strong>
+                    <p>{% if result.goal.direction == "achieved" %}已達成目標，繼續保持！{% else %}目標體重約 {{ result.goal.target_weight }} kg，{{ result.goal.summary }}。{% endif %}</p>
+                    {% if not result.goal.healthy %}<p class="goal-warning">此目標不在健康體位範圍（18.5 – 未滿 24）內，建議先諮詢醫師或營養師。</p>{% endif %}
+                  </div>
+                {% endif %}
                 {% if result.military %}
                   <div class="military-notice {{ result.military.kind }}">
                     <strong>符合{{ result.military.label }}</strong>

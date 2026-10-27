@@ -65,6 +65,57 @@ def military_status(bmi, height, today=None):
     return None
 
 
+# 油表式儀表的刻度範圍與色段，超出範圍時指針停在端點。
+GAUGE_MIN, GAUGE_MAX = 10, 40
+GAUGE_SEGMENTS = [
+    ("low", GAUGE_MIN, 18.5),
+    ("healthy", 18.5, 24),
+    ("high", 24, 27),
+    ("obese", 27, GAUGE_MAX),
+]
+
+
+def bmi_gauge(bmi):
+    clamped = min(max(bmi, GAUGE_MIN), GAUGE_MAX)
+    span = GAUGE_MAX - GAUGE_MIN
+    return {
+        "span": span,
+        "angle": round((clamped - GAUGE_MIN) / span * 180 - 90, 2),
+        "segments": [
+            {"tone": tone, "start": start - GAUGE_MIN, "length": end - start}
+            for tone, start, end in GAUGE_SEGMENTS
+        ],
+        "ticks": [
+            {
+                "label": f"{value:g}",
+                "x": round(100 - 98 * math.cos(math.pi * (value - GAUGE_MIN) / span), 1),
+                "y": round(103 - 98 * math.sin(math.pi * (value - GAUGE_MIN) / span), 1),
+            }
+            for value in (GAUGE_MIN, 18.5, 24, 27, GAUGE_MAX)
+        ],
+    }
+
+
+def goal_progress(bmi, height_meters, weight, target):
+    target_weight = target * height_meters * height_meters
+    change = round(target_weight - weight, 1)
+    gap = round(round(bmi, 1) - target, 1)
+    if gap == 0:
+        direction, summary = "achieved", "已達成目標"
+    elif gap < 0:
+        direction, summary = "gain", f"需增加約 {change:.1f} kg"
+    else:
+        direction, summary = "lose", f"需減少約 {-change:.1f} kg"
+    return {
+        "target": f"{target:.1f}",
+        "gap": f"{abs(gap):.1f}",
+        "target_weight": f"{target_weight:.1f}",
+        "direction": direction,
+        "summary": summary,
+        "healthy": 18.5 <= target < 24,
+    }
+
+
 def parse_positive_number(value):
     try:
         number = float(value)
@@ -77,19 +128,24 @@ def parse_positive_number(value):
 def index():
     height_input = ""
     weight_input = ""
+    target_input = ""
     errors = {}
     result = None
 
     if request.method == "POST":
         height_input = request.form.get("height", "").strip()
         weight_input = request.form.get("weight", "").strip()
+        target_input = request.form.get("target", "").strip()
         height = parse_positive_number(height_input)
         weight = parse_positive_number(weight_input)
+        target = parse_positive_number(target_input) if target_input else None
 
         if height is None:
             errors["height"] = "請輸入大於 0 的有效身高（公分）。"
         if weight is None:
             errors["weight"] = "請輸入大於 0 的有效體重（公斤）。"
+        if target_input and target is None:
+            errors["target"] = "請輸入大於 0 的有效目標 BMI。"
 
         if not errors:
             height_meters = height / 100
@@ -105,13 +161,16 @@ def index():
                     result = {
                         "bmi": f"{displayed_bmi:.1f}",
                         **bmi_guidance(displayed_bmi),
+                        "gauge": bmi_gauge(displayed_bmi),
                         "military": military_status(bmi, height),
+                        "goal": goal_progress(bmi, height_meters, weight, target) if target else None,
                     }
 
     return render_template(
         "index.html",
         height_input=height_input,
         weight_input=weight_input,
+        target_input=target_input,
         errors=errors,
         result=result,
     )
