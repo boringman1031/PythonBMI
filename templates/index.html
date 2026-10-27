@@ -51,6 +51,14 @@
                     </div>
                     {% if errors.weight %}<p class="field-error" id="weight-error">{{ errors.weight }}</p>{% endif %}
                   </div>
+                  <div class="field field-wide">
+                    <label for="target">目標 BMI <span>TARGET · 選填</span></label>
+                    <div class="input-wrap">
+                      <input id="target" name="target" type="number" inputmode="decimal" min="0.01" step="any" placeholder="例如 22" value="{{ target_input }}" {% if errors.target %}aria-invalid="true" aria-describedby="target-error"{% endif %}>
+                      <span class="unit">BMI</span>
+                    </div>
+                    {% if errors.target %}<p class="field-error" id="target-error">{{ errors.target }}</p>{% endif %}
+                  </div>
                 </div>
                 <button type="submit">計算 BMI <span aria-hidden="true">↗</span></button>
               </form>
@@ -69,6 +77,13 @@
                 <span class="result-label">你的體位屬於 <strong>{{ result.label }}</strong></span>
                 <h2 id="result-title">給你的健康建議</h2>
                 <p>{{ result.advice }}</p>
+                {% if result.goal %}
+                  <div class="goal-notice {{ result.goal.direction }}">
+                    <strong>目標 BMI {{ result.goal.target }}{% if result.goal.direction != "achieved" %}，相差 {{ result.goal.gap }}{% endif %}</strong>
+                    <p>{% if result.goal.direction == "achieved" %}已達成目標，繼續保持！{% else %}目標體重約 {{ result.goal.target_weight }} kg，{{ result.goal.summary }}。{% endif %}</p>
+                    {% if not result.goal.healthy %}<p class="goal-warning">此目標不在健康體位範圍（18.5 – 未滿 24）內，建議先諮詢醫師或營養師。</p>{% endif %}
+                  </div>
+                {% endif %}
                 {% if result.military %}
                   <div class="military-notice {{ result.military.kind }}">
                     <strong>符合{{ result.military.label }}</strong>
