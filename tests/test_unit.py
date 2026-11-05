@@ -1,7 +1,23 @@
 import unittest
 from datetime import date
 
-from app import bmi_guidance, military_status
+from bmi import InvalidMeasurement, bmi_guidance, calculate_bmi, military_status
+
+
+class CalculateBmiTests(unittest.TestCase):
+    def test_calculates_from_centimeters_and_kilograms(self):
+        self.assertAlmostEqual(calculate_bmi(170, 65), 22.491, places=3)
+
+    def test_unusable_values_report_the_responsible_field(self):
+        for height, weight, field in [
+            (1e-300, 65, "height"),
+            (1e308, 65, "height"),
+            (1, 1e308, "weight"),
+        ]:
+            with self.subTest(height=height, weight=weight):
+                with self.assertRaises(InvalidMeasurement) as caught:
+                    calculate_bmi(height, weight)
+                self.assertEqual(caught.exception.field, field)
 
 
 class BmiGuidanceTests(unittest.TestCase):
